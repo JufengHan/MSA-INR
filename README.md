@@ -34,6 +34,12 @@ Install from PyPI:
 pip install msa-inr
 ```
 
+Upgrade to the latest version:
+
+```bash
+pip install -U msa-inr
+```
+
 Or install from source:
 
 ```bash
@@ -50,9 +56,9 @@ pip install -e .
 
 ```python
 import torch
-from msa_inr import SineActivation
+from msa_inr import MSA
 
-activation = SineActivation(s_min=1.0, s_max=5.0)
+activation = MSA(s_min=1.0, s_max=5.0)
 
 x = torch.randn(8, 256)
 y = activation(x)
@@ -111,7 +117,7 @@ freqs = logspace(s_min, s_max, steps=C)
 and applies a channel-wise sinusoidal transformation:
 
 ```text
-MSA(x) = sin(freqs * x)
+MSA(x) = (1 / freqs) * sin(freqs * x)
 ```
 
 In this way, different hidden channels are associated with different frequency responses. Low-frequency channels help capture smooth structures, while high-frequency channels improve the representation of fine details and rapidly varying components.
@@ -122,28 +128,28 @@ This makes MSA suitable for implicit neural representation tasks where both glob
 
 ## API Reference
 
-### `SineActivation`
+### `MSA`
 
 ```python
-SineActivation(s_min, s_max)
+MSA(s_min=1.0, s_max=5.0)
 ```
 
-Multi-scale sine activation with log-spaced frequencies.
+Multi-Scale Sine Activation with log-spaced frequencies.
 
 #### Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| `s_min` | float | Lower exponent of the log-spaced frequency range |
-| `s_max` | float | Upper exponent of the log-spaced frequency range |
+| Parameter | Type | Default | Description |
+|---|---:|---:|---|
+| `s_min` | float | `1.0` | Lower exponent of the log-spaced frequency range |
+| `s_max` | float | `5.0` | Upper exponent of the log-spaced frequency range |
 
 #### Example
 
 ```python
 import torch
-from msa_inr import SineActivation
+from msa_inr import MSA
 
-act = SineActivation(s_min=1.0, s_max=5.0)
+act = MSA(s_min=1.0, s_max=5.0)
 
 x = torch.randn(16, 128)
 y = act(x)
@@ -166,7 +172,7 @@ MSANet(
 )
 ```
 
-A simple INR network using MSA activation layers.
+A simple INR network using MSA layers.
 
 #### Parameters
 
@@ -176,14 +182,30 @@ A simple INR network using MSA activation layers.
 | `hidden_features` | int | `256` | Hidden layer width |
 | `hidden_layers` | int | `2` | Number of hidden MSA layers |
 | `out_features` | int | `1` | Output dimension |
-| `s_min` | list or None | `None` | Lower frequency exponents for each hidden layer |
-| `s_max` | list or None | `None` | Upper frequency exponents for each hidden layer |
+| `s_min` | float, list, or None | `None` | Lower frequency exponents for each hidden layer |
+| `s_max` | float, list, or None | `None` | Upper frequency exponents for each hidden layer |
 
 If `s_min` and `s_max` are not specified, the default setting is:
 
 ```python
 s_min = [1.0] * hidden_layers
 s_max = [5.0] * hidden_layers
+```
+
+A scalar value is also supported:
+
+```python
+model = MSANet(hidden_layers=3, s_min=1.0, s_max=5.0)
+```
+
+which is equivalent to:
+
+```python
+model = MSANet(
+    hidden_layers=3,
+    s_min=[1.0, 1.0, 1.0],
+    s_max=[5.0, 5.0, 5.0],
+)
 ```
 
 ---
@@ -225,63 +247,6 @@ for step in range(1000):
         print(f"Step {step}, Loss: {loss.item():.6f}")
 ```
 
----
-
-## Project Structure
-
-```text
-MSA_INR/
-├── pyproject.toml
-├── README.md
-├── msa.png
-├── LICENSE
-├── src/
-│   └── msa_inr/
-│       ├── __init__.py
-│       ├── activations.py
-│       └── models.py
-├── examples/
-│   ├── use_activation.py
-│   └── use_model.py
-└── tests/
-    └── test_basic.py
-```
-
----
-
-## Build from Source
-
-Install build tools:
-
-```bash
-pip install build twine
-```
-
-Build the package:
-
-```bash
-python -m build
-```
-
-Check the package:
-
-```bash
-twine check dist/*
-```
-
-Upload to PyPI:
-
-```bash
-twine upload dist/*
-```
-
-After uploading, users can install it using:
-
-```bash
-pip install msa-inr
-```
-
----
 
 ## Citation
 
@@ -311,3 +276,5 @@ This project is released under the MIT License.
 ## Contact
 
 For questions, issues, or suggestions, please open an issue in the GitHub repository.
+
+You can also contact us by email: hanjufeng@semi.ac.cn
